@@ -38,7 +38,7 @@ void HandleOutput(tflite::ErrorReporter* error_reporter, int kind) {
   }
 
   // Toggle the yellow LED every time an inference is performed
-  am_devices_led_toggle(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
+  am_devices_led_toggle(am_bsp_psLEDs, AM_BSP_LED_RED);
 
   // Set the LED color and print a symbol (red: wing, blue: ring, green: slope)
   if (kind == 0) {
@@ -47,7 +47,7 @@ void HandleOutput(tflite::ErrorReporter* error_reporter, int kind) {
         "WING:\n\r*         *         *\n\r *       * *       "
         "*\n\r  *     *   *     *\n\r   *   *     *   *\n\r    * *       "
         "* *\n\r     *         *\n\r");
-    am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_RED);
+    am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
     am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_BLUE);
     am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_GREEN);
   } else if (kind == 1) {
@@ -56,7 +56,7 @@ void HandleOutput(tflite::ErrorReporter* error_reporter, int kind) {
         "RING:\n\r          *\n\r       *     *\n\r     *         *\n\r "
         "   *           *\n\r     *         *\n\r       *     *\n\r      "
         "    *\n\r");
-    am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_RED);
+    am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
     am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_BLUE);
     am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_GREEN);
   } else if (kind == 2) {
@@ -64,7 +64,7 @@ void HandleOutput(tflite::ErrorReporter* error_reporter, int kind) {
         error_reporter,
         "SLOPE:\n\r        *\n\r       *\n\r      *\n\r     *\n\r    "
         "*\n\r   *\n\r  *\n\r * * * * * * * *\n\r");
-    am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_RED);
+    am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
     am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_BLUE);
     am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_GREEN);
   }
