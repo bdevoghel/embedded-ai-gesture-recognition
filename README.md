@@ -16,4 +16,4 @@ For this project we use the Sparkfun Edge micro-controller unit development boar
 
 ## Building and Flashing the MCU
 The [Makefile](/Makefile) at the root should allow to build and flash the MCU with the `build` and `flash` targets respectively.
-Big insiration was taken from [Google's Codelabs tutorial](https://codelabs.developers.google.com/codelabs/sparkfun-tensorflow).
+Big inspiration was taken from [Google's Codelabs tutorial](https://codelabs.developers.google.com/codelabs/sparkfun-tensorflow).
