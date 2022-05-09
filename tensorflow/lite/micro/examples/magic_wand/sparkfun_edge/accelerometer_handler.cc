@@ -20,6 +20,7 @@ limitations under the License.
 #ifndef ARDUINO_EXCLUDE_CODE
 
 #include "tensorflow/lite/micro/examples/magic_wand/accelerometer_handler.h"
+#include "tensorflow/lite/micro/examples/magic_wand/constants.h"
 
 // These are headers from Ambiq's Apollo3 SDK.
 #include <string.h>
@@ -36,7 +37,8 @@ lis2dh12_ctx_t dev_ctx;                 // accelerometer device control
 // storing the most recent data
 axis3bit16_t data_raw_acceleration;
 // A buffer holding the last 200 sets of 3-channel values
-float save_data[600] = {0.0};
+const int buffer_size = 600; // TODO : determine size of buffer
+float save_data[buffer_size] = {0.0};
 // Most recent position in the save_data buffer
 int begin_index = 0;
 // True if there is not yet enough data to run inference
@@ -148,13 +150,13 @@ TfLiteStatus SetupAccelerometer(tflite::ErrorReporter* error_reporter) {
     return kTfLiteError;
   }
 
-  TF_LITE_REPORT_ERROR(error_reporter, "Magic starts!");
+  error_reporter->Report("[ACC] Accelerometer set up");
 
   return kTfLiteOk;
 }
 
 bool ReadAccelerometer(tflite::ErrorReporter* error_reporter, float* input,
-                       int length) {
+                       int length) {  
   // Check FIFO buffer for new samples
   lis2dh12_fifo_src_reg_t status;
   if (lis2dh12_fifo_status_get(&dev_ctx, &status)) {
@@ -174,7 +176,7 @@ bool ReadAccelerometer(tflite::ErrorReporter* error_reporter, float* input,
 
   // Load data from FIFO buffer
   axis3bit16_t data_raw_acceleration_local;
-  for (int i = 0; i < samples; i++) {
+  for (int i = 0; i < samples; i++) { // in general only one iteration per tick
     // Zero out the struct that holds raw accelerometer data
     memset(data_raw_acceleration_local.u8bit, 0x00, 3 * sizeof(int16_t));
     // If the return value is non-zero, sensor data was successfully read
@@ -186,13 +188,20 @@ bool ReadAccelerometer(tflite::ErrorReporter* error_reporter, float* input,
       // milli-Gs, a unit of acceleration, and store in the current position of
       // our buffer
       save_data[begin_index++] =
-          lis2dh12_from_fs2_hr_to_mg(data_raw_acceleration_local.i16bit[0]);
+          ACCELEROMETER_FACTOR * lis2dh12_from_fs2_hr_to_mg(data_raw_acceleration_local.i16bit[0]);
       save_data[begin_index++] =
-          lis2dh12_from_fs2_hr_to_mg(data_raw_acceleration_local.i16bit[1]);
+          ACCELEROMETER_FACTOR * lis2dh12_from_fs2_hr_to_mg(data_raw_acceleration_local.i16bit[1]);
       save_data[begin_index++] =
-          lis2dh12_from_fs2_hr_to_mg(data_raw_acceleration_local.i16bit[2]);
+          ACCELEROMETER_FACTOR * lis2dh12_from_fs2_hr_to_mg(data_raw_acceleration_local.i16bit[2]);
+
+      // Log read data
+      error_reporter->Report("[ACC] idx:%d\t - X:%d\t Y:%d\t Z:%d", (int) (begin_index/3), (int) save_data[begin_index-3], (int) save_data[begin_index-2], (int) save_data[begin_index-1]);
+
       // Start from beginning, imitating loop array.
-      if (begin_index >= 600) begin_index = 0;
+      if (begin_index >= buffer_size) {
+        begin_index = 0;
+        error_reporter->Report("[ACC] Looping buffer array of size %d)", buffer_size);
+      }
     }
   }
 
@@ -210,7 +219,7 @@ bool ReadAccelerometer(tflite::ErrorReporter* error_reporter, float* input,
   for (int i = 0; i < length; ++i) {
     int ring_array_index = begin_index + i - length;
     if (ring_array_index < 0) {
-      ring_array_index += 600;
+      ring_array_index += buffer_size;
     }
     input[i] = save_data[ring_array_index];
   }

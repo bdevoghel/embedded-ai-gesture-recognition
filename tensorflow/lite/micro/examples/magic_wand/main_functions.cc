@@ -28,10 +28,10 @@ limitations under the License.
 
 // Globals, used for compatibility with Arduino-style sketches.
 namespace {
-tflite::ErrorReporter* error_reporter = nullptr;
-const tflite::Model* model = nullptr;
-tflite::MicroInterpreter* interpreter = nullptr;
-TfLiteTensor* model_input = nullptr;
+tflite::ErrorReporter* error_reporter = nullptr; // functor to report logs
+const tflite::Model* model = nullptr; // ptr to saved model weigths
+tflite::MicroInterpreter* interpreter = nullptr; // ptr to interpreter using saved model and other helper functions
+TfLiteTensor* model_input = nullptr; // ptr to model input buffer ; to be filled with input values for interpretation
 int input_length;
 
 // Create an area of memory to use for input, output, and intermediate arrays.
@@ -50,7 +50,7 @@ void setup() {
 
   // Map the model into a usable data structure. This doesn't involve any
   // copying or parsing, it's a very lightweight operation.
-  model = tflite::GetModel(g_magic_wand_model_data);
+  model = tflite::GetModel(g_magic_wand_model_data); // import saved model binary
   if (model->version() != TFLITE_SCHEMA_VERSION) {
     TF_LITE_REPORT_ERROR(error_reporter,
                          "Model provided is schema version %d not equal "
@@ -70,6 +70,7 @@ void setup() {
   micro_op_resolver.AddFullyConnected();
   micro_op_resolver.AddMaxPool2D();
   micro_op_resolver.AddSoftmax();
+  // TODO : add other needed operations here if needed
 
   // Build an interpreter to run the model with.
   static tflite::MicroInterpreter static_interpreter(
@@ -91,30 +92,37 @@ void setup() {
   }
 
   input_length = model_input->bytes / sizeof(float);
+  error_reporter->Report("[SET] Model input is of length %d (to be devided by 3 to have the number of measures for each XYZ axis)", input_length);
 
   TfLiteStatus setup_status = SetupAccelerometer(error_reporter);
   if (setup_status != kTfLiteOk) {
     TF_LITE_REPORT_ERROR(error_reporter, "Set up failed\n");
   }
+  error_reporter->Report("[SET] Set up done");
 }
 
 void loop() {
+  // error_reporter->Report("[   ] New loop after %sms", /*millis()*/"???"); // TODO how to access time on Sparkfun Edge
+
   // Attempt to read new data from the accelerometer.
   bool got_data =
-      ReadAccelerometer(error_reporter, model_input->data.f, input_length);
+      ReadAccelerometer(error_reporter, model_input->data.f, input_length); // saves input data in model_input buffer
   // If there was no new data, wait until next time.
   if (!got_data) return;
 
   // Run inference, and report any error.
-  TfLiteStatus invoke_status = interpreter->Invoke();
+  TfLiteStatus invoke_status = interpreter->Invoke(); // uses input data previously saved in buffer to make inference
   if (invoke_status != kTfLiteOk) {
     TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed on index: %d\n",
                          begin_index);
     return;
   }
   // Analyze the results to obtain a prediction
-  int gesture_index = PredictGesture(interpreter->output(0)->data.f);
+  int gesture_index = PredictGesture(interpreter->output(0)->data.f); // uses model inference output to predict gesture
 
   // Produce an output
-  HandleOutput(error_reporter, gesture_index);
+  HandleOutput(error_reporter, gesture_index); // handels the predicted recognized gesture
+
+  // Add delay
+  // delay(1); // suspends for given time in mircoseconds TODO: delay doesn't work
 }
