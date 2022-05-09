@@ -121,9 +121,28 @@ flash_magic_wand:
 	python3 tensorflow/lite/micro/tools/make/downloads/AmbiqSuite-Rel2.2.0/tools/apollo3_scripts/uart_wired_update.py -b $$BAUD_RATE $$DEVICENAME -r 1 -f main_nonsecure_wire.bin -i 6
 
 
+monitor:
+	@echo "To stop viewing the debug output, hit 'Ctrl+A', immediately followed by the 'K' key, then hit the 'Y' key."
+	@read -p "Enter full name of device (default is '/dev/ttyUSB0'): " DEVICENAME; if [$$DEVICENAME = ""]; then export DEVICENAME=/dev/ttyUSB0; fi; \
+	sudo chmod 777 $$DEVICENAME; \
+	screen $$DEVICENAME 115200
+
+
 build:
 	$(MAKE) build_magic_wand
 
 
 flash:
 	$(MAKE) flash_magic_wand
+
+quick_flash_and_monitor:
+	$(MAKE) build_magic_wand
+
+	@echo "To stop viewing the debug output, hit 'Ctrl+A', immediately followed by the 'K' key, then hit the 'Y' key."
+	@read -p "Start holding button 14 ; Click button RST and then hit ENTER ; Hold on 14 until after seeing 'Sending Data Packet of length 8180'" OK; \
+	export DEVICENAME=/dev/ttyUSB0; \
+	sudo chmod 777 $$DEVICENAME; \
+	export BAUD_RATE=921600; \
+	echo "Using BAUD_RATE=$$BAUD_RATE, DEVICENAME=$$DEVICENAME"; \
+	python3 tensorflow/lite/micro/tools/make/downloads/AmbiqSuite-Rel2.2.0/tools/apollo3_scripts/uart_wired_update.py -b $$BAUD_RATE $$DEVICENAME -r 1 -f main_nonsecure_wire.bin -i 6; \
+	screen $$DEVICENAME 115200
