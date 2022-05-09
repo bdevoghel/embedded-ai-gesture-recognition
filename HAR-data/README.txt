@@ -1,3 +1,5 @@
+Data can be downloaded from https://archive.ics.uci.edu/ml/datasets/Activity+Recognition+from+Single+Chest-Mounted+Accelerometer.
+
 1. Title: Activity Recognition from a Single Chest-Mounted Accelerometer
 	Updated Nov, 2013 , P. Casale, email: plcasale@ieee.org
 	
