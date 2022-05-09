@@ -110,7 +110,7 @@ TfLiteStatus SetupAccelerometer(tflite::ErrorReporter* error_reporter) {
   am_hal_cachectrl_enable();
 
   // Configure the board for low power operation.
-  am_bsp_low_power_init();
+  // am_bsp_low_power_init();  // removed since command makes program fail TODO debug
 
   // Initialize the device interface and control structures
   dev_if.iomHandle =
