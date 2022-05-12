@@ -20,6 +20,7 @@ limitations under the License.
 #ifndef ARDUINO_EXCLUDE_CODE
 
 #include "tensorflow/lite/micro/examples/magic_wand/output_handler.h"
+#include "tensorflow/lite/micro/examples/magic_wand/constants.h"
 
 #include "am_bsp.h"         // NOLINT
 #include "am_mcu_apollo.h"  // NOLINT
@@ -40,30 +41,49 @@ void HandleOutput(tflite::ErrorReporter* error_reporter, int kind) {
   // Toggle the yellow LED every time an inference is performed
   am_devices_led_toggle(am_bsp_psLEDs, AM_BSP_LED_RED);
 
-  // Set the LED color and print a symbol (red: wing, blue: ring, green: slope)
-  if (kind == 0) {
+  // Set the LED color and print a symbol (yellow: wing, blue: ring, green: slope)
+  if (kind == kWingGesture) {
     TF_LITE_REPORT_ERROR(
         error_reporter,
-        "WING:\n\r*         *         *\n\r *       * *       "
-        "*\n\r  *     *   *     *\n\r   *   *     *   *\n\r    * *       "
-        "* *\n\r     *         *\n\r");
+        "WING:"
+        "\n\r*         *         *"
+        "\n\r *       * *       *"
+        "\n\r  *     *   *     *"
+        "\n\r   *   *     *   *"
+        "\n\r    * *       * *"
+        "\n\r     *         *"
+        "\n\r");
     am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
     am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_BLUE);
     am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_GREEN);
-  } else if (kind == 1) {
+  } else if (kind == kRingGesture) {
     TF_LITE_REPORT_ERROR(
         error_reporter,
-        "RING:\n\r          *\n\r       *     *\n\r     *         *\n\r "
-        "   *           *\n\r     *         *\n\r       *     *\n\r      "
-        "    *\n\r");
+        "RING:"
+        "\n\r          *"
+        "\n\r       *     *"
+        "\n\r     *         *"
+        "\n\r    *           *"
+        "\n\r     *         *"
+        "\n\r       *     *"
+        "\n\r          *"
+        "\n\r");
     am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
     am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_BLUE);
     am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_GREEN);
-  } else if (kind == 2) {
+  } else if (kind == kSlopeGesture) {
     TF_LITE_REPORT_ERROR(
         error_reporter,
-        "SLOPE:\n\r        *\n\r       *\n\r      *\n\r     *\n\r    "
-        "*\n\r   *\n\r  *\n\r * * * * * * * *\n\r");
+        "SLOPE:"
+        "\n\r        *"
+        "\n\r       *"
+        "\n\r      *"
+        "\n\r     *"
+        "\n\r    *"
+        "\n\r   *"
+        "\n\r  *"
+        "\n\r * * * * * * * *"
+        "\n\r");
     am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
     am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_BLUE);
     am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_GREEN);

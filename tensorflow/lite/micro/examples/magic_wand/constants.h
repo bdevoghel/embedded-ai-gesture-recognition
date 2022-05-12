@@ -16,6 +16,13 @@ limitations under the License.
 #ifndef TENSORFLOW_LITE_MICRO_EXAMPLES_MAGIC_WAND_CONSTANTS_H_
 #define TENSORFLOW_LITE_MICRO_EXAMPLES_MAGIC_WAND_CONSTANTS_H_
 
+#define MAGIC_WAND_MODEL
+#ifdef MAGIC_WAND_MODEL
+#define ACCELEROMETER_FACTOR 1
+#else
+#define ACCELEROMETER_FACTOR -1
+#endif
+
 // The expected accelerometer data sample frequency
 const float kTargetHz = 25;
 
@@ -32,7 +39,7 @@ constexpr int kNoGesture = 3;
 // more robust results though, so consider retraining if you are seeing poor
 // predictions.
 constexpr float kDetectionThreshold = 0.8f;
-constexpr int kPredictionHistoryLength = 5;
-constexpr int kPredictionSuppressionDuration = 25;
+constexpr int kPredictionHistoryLength = 5; // buffer length of previous predictions (one prediction / tick)
+constexpr int kPredictionSuppressionDuration = 25; // ticks during which a detection will not result in a trigger
 
 #endif  // TENSORFLOW_LITE_MICRO_EXAMPLES_MAGIC_WAND_CONSTANTS_H_
