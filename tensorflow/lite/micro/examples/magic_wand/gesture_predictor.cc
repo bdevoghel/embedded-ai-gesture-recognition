@@ -26,11 +26,12 @@ int prediction_suppression_count = 0;
 
 // Return the result of the last prediction
 // 0: wing("W"), 1: ring("O"), 2: slope("angle"), 3: unknown
-int PredictGesture(float* output) {
+int PredictGesture(float* output, int* freezePredictionWitnessTimer, float detectionThreshold) {
   // Record the latest predictions in our rolling history buffer.
   for (int i = 0; i < kGestureCount; ++i) {
     prediction_history[i][prediction_history_index] = output[i];
   }
+
   // Figure out which slot to put the next predictions into.
   ++prediction_history_index;
   if (prediction_history_index >= kPredictionHistoryLength) {
@@ -60,13 +61,14 @@ int PredictGesture(float* output) {
   // If we're predicting no gesture, or the average score is too low, or there's
   // been a gesture recognised too recently, return no gesture.
   if ((max_predict_index == kNoGesture) ||
-      (max_predict_score < kDetectionThreshold) ||
+      (max_predict_score < detectionThreshold) ||
       (prediction_suppression_count > 0)) {
     return kNoGesture;
   } else {
     // Reset the suppression counter so we don't come up with another prediction
     // too soon.
     prediction_suppression_count = kPredictionSuppressionDuration;
+    *freezePredictionWitnessTimer = kPredictionSuppressionDuration;
     return max_predict_index;
   }
 }

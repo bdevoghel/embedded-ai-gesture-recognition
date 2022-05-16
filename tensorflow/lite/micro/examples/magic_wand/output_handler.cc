@@ -15,7 +15,7 @@ limitations under the License.
 
 #include "tensorflow/lite/micro/examples/magic_wand/output_handler.h"
 
-void HandleOutput(tflite::ErrorReporter* error_reporter, int kind) {
+void HandleOutput(tflite::ErrorReporter* error_reporter, int kind, int* freezePredictionWitnessTimer) {
   // light (red: wing, blue: ring, green: slope)
   if (kind == 0) {
     TF_LITE_REPORT_ERROR(

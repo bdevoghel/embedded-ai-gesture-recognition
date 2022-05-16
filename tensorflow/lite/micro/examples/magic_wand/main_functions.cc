@@ -23,6 +23,7 @@ limitations under the License.
 #include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
+#include "tensorflow/lite/micro/all_ops_resolver.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/version.h"
 
@@ -33,6 +34,7 @@ const tflite::Model* model = nullptr; // ptr to saved model weigths
 tflite::MicroInterpreter* interpreter = nullptr; // ptr to interpreter using saved model and other helper functions
 TfLiteTensor* model_input = nullptr; // ptr to model input buffer ; to be filled with input values for interpretation
 int input_length;
+int freezePredictionWitnessTimer = 0; // timer indicating how long ago the last output was different from kNoGesture
 
 // Create an area of memory to use for input, output, and intermediate arrays.
 // The size of this will depend on the model you're using, and may need to be
@@ -65,6 +67,7 @@ void setup() {
   // incur some penalty in code space for op implementations that are not
   // needed by this graph.
   static tflite::MicroMutableOpResolver<5> micro_op_resolver;  // NOLINT
+  static tflite::AllOpsResolver micro_op_resolver_all;  // TODO remove if not used 
   micro_op_resolver.AddConv2D();
   micro_op_resolver.AddDepthwiseConv2D();
   micro_op_resolver.AddFullyConnected();
@@ -74,7 +77,7 @@ void setup() {
 
   // Build an interpreter to run the model with.
   static tflite::MicroInterpreter static_interpreter(
-      model, micro_op_resolver, tensor_arena, kTensorArenaSize, error_reporter);
+      model, micro_op_resolver_all, tensor_arena, kTensorArenaSize, error_reporter);
   interpreter = &static_interpreter;
 
   // Allocate memory from the tensor_arena for the model's tensors.
@@ -82,12 +85,13 @@ void setup() {
 
   // Obtain pointer to the model's input tensor.
   model_input = interpreter->input(0);
-  if ((model_input->dims->size != 4) || (model_input->dims->data[0] != 1) ||
-      (model_input->dims->data[1] != 128) ||
+  if ((model_input->dims->size != 3) || (model_input->dims->data[0] != 1) ||
+      (model_input->dims->data[1] > kAccellerometer_buffer_size) ||
       (model_input->dims->data[2] != kChannelNumber) ||
       (model_input->type != kTfLiteFloat32)) {
     TF_LITE_REPORT_ERROR(error_reporter,
                          "Bad input tensor parameters in model");
+    error_reporter->Report("size %d data0 %d data1 %d data2 %d ", model_input->dims->size, model_input->dims->data[0], model_input->dims->data[1], model_input->dims->data[2]);
     return;
   }
 
@@ -98,7 +102,7 @@ void setup() {
   if (setup_status != kTfLiteOk) {
     TF_LITE_REPORT_ERROR(error_reporter, "Set up failed\n");
   }
-  error_reporter->Report("[SET] Set up done");
+  error_reporter->Report("[SET] Set up done. kDetectionThreshold: %f   kPredictionHistoryLength: %d   kPredictionSuppressionDuration: %d", (double) kDetectionThreshold, kPredictionHistoryLength, kPredictionSuppressionDuration);
 }
 
 void loop() {
@@ -117,12 +121,14 @@ void loop() {
                          begin_index);
     return;
   }
+  
   // Analyze the results to obtain a prediction
-  int gesture_index = PredictGesture(interpreter->output(0)->data.f); // uses model inference output to predict gesture
-
+  int gesture_index = PredictGesture(interpreter->output(0)->data.f, &freezePredictionWitnessTimer, kDetectionThreshold); // uses model inference output to predict gesture
+  error_reporter->Report("[PRD] predicted(suppressionDuration): %d(%d) - last (milli)prediction  0:%d\t    1:%d \t    2:%d", gesture_index, freezePredictionWitnessTimer, (int) (1000.f*interpreter->output(0)->data.f[0]), (int) (1000.f*interpreter->output(0)->data.f[1]), (int) (1000.f*interpreter->output(0)->data.f[2]));
+  
   // Produce an output
-  HandleOutput(error_reporter, gesture_index); // handels the predicted recognized gesture
-
+  HandleOutput(error_reporter, gesture_index, &freezePredictionWitnessTimer); // handels the predicted recognized gesture
+  
   // Add delay
-  // delay(1); // suspends for given time in mircoseconds TODO: delay doesn't work
+  // error_reporter->Report("\n[   ] --- "); // suspends for given time in mircoseconds
 }

@@ -36,9 +36,8 @@ lis2dh12_ctx_t dev_ctx;                 // accelerometer device control
 // A union representing either int16_t[3] or uint8_t[6],
 // storing the most recent data
 axis3bit16_t data_raw_acceleration;
-// A buffer holding the last 200 sets of 3-channel values
-const int buffer_size = 600; // TODO : determine size of buffer
-float save_data[buffer_size] = {0.0};
+// A buffer holding the last sets of 3-channel values
+float save_data[kAccellerometer_buffer_size] = {0.0};
 // Most recent position in the save_data buffer
 int begin_index = 0;
 // True if there is not yet enough data to run inference
@@ -150,7 +149,7 @@ TfLiteStatus SetupAccelerometer(tflite::ErrorReporter* error_reporter) {
     return kTfLiteError;
   }
 
-  error_reporter->Report("[ACC] Accelerometer set up");
+  error_reporter->Report("[ACC] Accelerometer set up with buffer size %d", kAccellerometer_buffer_size);
 
   return kTfLiteOk;
 }
@@ -195,18 +194,20 @@ bool ReadAccelerometer(tflite::ErrorReporter* error_reporter, float* input,
           ACCELEROMETER_FACTOR * lis2dh12_from_fs2_hr_to_mg(data_raw_acceleration_local.i16bit[2]);
 
       // Log read data
-      error_reporter->Report("[ACC] idx:%d\t - X:%d\t Y:%d\t Z:%d", (int) (begin_index/3), (int) save_data[begin_index-3], (int) save_data[begin_index-2], (int) save_data[begin_index-1]);
+      if ((int) (begin_index/3) % 10 == 0) {
+        // error_reporter->Report("[ACC] idx:%d\t   - X:%d\t    Y:%d \t    Z:%d", (int) (begin_index/3), (int) save_data[begin_index-3], (int) save_data[begin_index-2], (int) save_data[begin_index-1]);
+      }
 
       // Start from beginning, imitating loop array.
-      if (begin_index >= buffer_size) {
+      if (begin_index >= kAccellerometer_buffer_size) {
         begin_index = 0;
-        error_reporter->Report("[ACC] Looping buffer array of size %d)", buffer_size);
+        error_reporter->Report("[ACC] Looping buffer (array of size %d for model input of length %d)", kAccellerometer_buffer_size, length);
       }
     }
   }
 
   // Check if we are ready for prediction or still pending more initial data
-  if (pending_initial_data && begin_index >= 200) {
+  if (pending_initial_data && begin_index >= kAccellerometer_buffer_size/3) {
     pending_initial_data = false;
   }
 
@@ -219,7 +220,7 @@ bool ReadAccelerometer(tflite::ErrorReporter* error_reporter, float* input,
   for (int i = 0; i < length; ++i) {
     int ring_array_index = begin_index + i - length;
     if (ring_array_index < 0) {
-      ring_array_index += buffer_size;
+      ring_array_index += kAccellerometer_buffer_size;
     }
     input[i] = save_data[ring_array_index];
   }

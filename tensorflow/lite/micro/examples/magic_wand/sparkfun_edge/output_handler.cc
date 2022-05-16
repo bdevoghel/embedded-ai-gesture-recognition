@@ -26,7 +26,7 @@ limitations under the License.
 #include "am_mcu_apollo.h"  // NOLINT
 #include "am_util.h"        // NOLINT
 
-void HandleOutput(tflite::ErrorReporter* error_reporter, int kind) {
+void HandleOutput(tflite::ErrorReporter* error_reporter, int kind, int* freezePredictionWitnessTimer) {
   // The first time this method runs, set up our LEDs correctly
   static bool is_initialized = false;
   if (!is_initialized) {
@@ -38,11 +38,11 @@ void HandleOutput(tflite::ErrorReporter* error_reporter, int kind) {
     is_initialized = true;
   }
 
-  // Toggle the yellow LED every time an inference is performed
+  // Toggle the red LED every time an inference is performed
   am_devices_led_toggle(am_bsp_psLEDs, AM_BSP_LED_RED);
 
-  // Set the LED color and print a symbol (yellow: wing, blue: ring, green: slope)
-  if (kind == kWingGesture) {
+  // Set the LED color and print a symbol (yellow: walk, green: stairs)
+  if (kind == kWalkingGesture) {
     TF_LITE_REPORT_ERROR(
         error_reporter,
         "WING:"
@@ -53,25 +53,25 @@ void HandleOutput(tflite::ErrorReporter* error_reporter, int kind) {
         "\n\r    * *       * *"
         "\n\r     *         *"
         "\n\r");
-    am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
+    am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_YELLOW); // YELLOW on
     am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_BLUE);
     am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_GREEN);
-  } else if (kind == kRingGesture) {
-    TF_LITE_REPORT_ERROR(
-        error_reporter,
-        "RING:"
-        "\n\r          *"
-        "\n\r       *     *"
-        "\n\r     *         *"
-        "\n\r    *           *"
-        "\n\r     *         *"
-        "\n\r       *     *"
-        "\n\r          *"
-        "\n\r");
-    am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
-    am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_BLUE);
-    am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_GREEN);
-  } else if (kind == kSlopeGesture) {
+  // } else if (kind == kRingGesture) {
+  //   TF_LITE_REPORT_ERROR(
+  //       error_reporter,
+  //       "RING:"
+  //       "\n\r          *"
+  //       "\n\r       *     *"
+  //       "\n\r     *         *"
+  //       "\n\r    *           *"
+  //       "\n\r     *         *"
+  //       "\n\r       *     *"
+  //       "\n\r          *"
+  //       "\n\r");
+  //   am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
+  //   am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_BLUE); // BLUE on
+  //   am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_GREEN);
+  } else if (kind == kStairsGesture) {
     TF_LITE_REPORT_ERROR(
         error_reporter,
         "SLOPE:"
@@ -86,7 +86,13 @@ void HandleOutput(tflite::ErrorReporter* error_reporter, int kind) {
         "\n\r");
     am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
     am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_BLUE);
-    am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_GREEN);
+    am_devices_led_on(am_bsp_psLEDs, AM_BSP_LED_GREEN); // GREEN on
+  } else if (kind == kNoGesture && *freezePredictionWitnessTimer == 0) {
+    am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_YELLOW);
+    am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_BLUE);
+    am_devices_led_off(am_bsp_psLEDs, AM_BSP_LED_GREEN);
+  } else if (*freezePredictionWitnessTimer > 0) {
+    *freezePredictionWitnessTimer = *freezePredictionWitnessTimer - 1;
   }
 }
 
