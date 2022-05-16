@@ -29,5 +29,5 @@ From dataset introduced in [Casale et. al. 2011](https://www.researchgate.net/pu
 
 Note : to be able to run the notebook, is may be needed to move it out of the Tensorflow library together with the dataset. Also the following libraties are needed to be added the the `embedded_ai` environment:
 ```
-pip install tensorflow jupyter matplotlib pandas
+pip install tensorflow tensorflow-model-optimization jupyter matplotlib pandas tqdm
 ```
